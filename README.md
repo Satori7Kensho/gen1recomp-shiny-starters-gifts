@@ -17,10 +17,10 @@ Tested to work with the following mods:
 
 [Shiny Pokémon mod](https://github.com/masterwebx/gen1recomp-shiny-pokemon),
 
-Wilds of Kanto [overworld_wild_spawns](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod),
+Wilds of Kanto [(Overworld_Wild_Spawns)](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod),
 
 PokéPC Followers [(PokePCFollowers_VoxelMerge)](https://github.com/gamecorner-033/PokePCFollowers),
 
 Dramatic Shape [(DRAMATIC_SHAPE)](https://github.com/DramaticShape/DramaticShapeVoxelMod),
 
-Crystal Animated Sprites with Shiny [Crystal_Animated_Sprites_with_Shiny_Visuals.](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).
+Crystal Animated Sprites with Shiny [(Crystal_Animated_Sprites_with_Shiny_Visuals).](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).
