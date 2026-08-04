@@ -13,7 +13,9 @@ Must activate before receiving Pokémon for shiny.
 3. Enable the mod with **F10**
 4. Restart or start a new game
 
-Tested to work with [Shiny Pokémon mod](https://github.com/masterwebx/gen1recomp-shiny-pokemon),
+Tested to work with the following mods:
+
+[Shiny Pokémon mod](https://github.com/masterwebx/gen1recomp-shiny-pokemon),
 
 Wilds of Kanto [overworld_wild_spawns](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod),
 
@@ -21,4 +23,4 @@ PokéPC Followers [(PokePCFollowers_VoxelMerge)](https://github.com/gamecorner-0
 
 Dramatic Shape [(DRAMATIC_SHAPE)](https://github.com/DramaticShape/DramaticShapeVoxelMod),
 
-Crystal Animated Sprites with Shiny [(https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).
+Crystal Animated Sprites with Shiny [Crystal_Animated_Sprites_with_Shiny_Visuals.](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).
