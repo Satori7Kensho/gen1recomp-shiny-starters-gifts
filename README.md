@@ -21,6 +21,6 @@ Wilds of Kanto [(Overworld_Wild_Spawns)](https://github.com/YoDrehDenSwagAuf/ove
 
 PokéPC Followers [(PokePCFollowers_VoxelMerge)](https://github.com/gamecorner-033/PokePCFollowers),
 
-Dramatic Shape [(DRAMATIC_SHAPE)](https://github.com/DramaticShape/DramaticShapeVoxelMod),
+Dramatic Shape Voxel Mod [(DRAMATIC_SHAPE)](https://github.com/DramaticShape/DramaticShapeVoxelMod),
 
 Crystal Animated Sprites with Shiny [(Crystal_Animated_Sprites_with_Shiny_Visuals).](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals).
