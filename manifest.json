@@ -1,0 +1,10 @@
+{
+  "id": "shiny_starters_gifts",
+  "name": "Shiny Gifts & Starters",
+  "version": "1.0.0",
+  "entry": "main.lua",
+  "api": 2,
+  "description": "Force your starter (and optionally all story gifts) to be shiny.",
+  "category": "QOL",
+  "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts"
+}
