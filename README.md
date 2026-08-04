@@ -9,7 +9,7 @@ Must activate before receiving Pokémon for shiny.
 
 ## Installation
 1. Download the files (or the whole repository as ZIP)
-2. Put the folder `shiny_gifts` into your Gen1Recomp `mods/` folder
+2. Put the folder `shiny_starters_gifts` into your Gen1Recomp `mods/` folder
 3. Enable the mod with **F10**
 4. Restart or start a new game
 
