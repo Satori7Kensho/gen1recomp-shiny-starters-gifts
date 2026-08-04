@@ -6,5 +6,6 @@
   "api": 2,
   "description": "Force your starter (and optionally all story gifts) to be shiny.",
   "category": "QOL",
-  "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts"
+  "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts",
+  "permissions": ["engine_internals"]
 }
