@@ -1,7 +1,7 @@
 {
   "id": "shiny_starters_gifts",
   "name": "Shiny Gifts & Starters",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "main.lua",
   "api": 2,
   "description": "Force your starter (and optionally all story gifts) to be shiny.",
