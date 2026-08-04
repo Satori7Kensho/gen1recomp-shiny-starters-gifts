@@ -1,10 +1,11 @@
 # Shiny Gifts & Starters for Gen1Recomp
 
-A small companion mod that lets you force your starter (and optionally all story gifts) to be shiny in [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp).
+A small companion mod that lets you force your starter (and optionally all story gifts) to be shiny in [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp). 
+Must activate before receiving Pokémon for shiny.
 
 ## Options
-- **SHINY STARTERS** – Force the player’s starter to be shiny
-- **SHINY ALL GIFTS** – Force every story gift (fossils, Lapras, Eevee, etc.) to be shiny
+- **SHINY STARTERS** – Activate before receiving starter to force the player’s starter to be shiny
+- **SHINY ALL GIFTS** – Force every story gift (fossils, Lapras, Eevee, etc.) to be shiny (Activate before receiving gift).
 
 ## Installation
 1. Download the files (or the whole repository as ZIP)
