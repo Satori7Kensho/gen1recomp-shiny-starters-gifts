@@ -1,4 +1,4 @@
--- Shiny Gifts & Starters v1.0 
+-- Shiny Gifts & Starters v1.1 
 -- Compatible with the main shiny mod, Wilds of Kanto, voxel, followers, etc.
 
 return function(mod)
@@ -51,7 +51,7 @@ return function(mod)
       type    = "toggle",
       label   = "SHINY STARTERS",
       default = true,
-      help    = "Force the player's starter (and rival's when possible) to be shiny.",
+      help    = "Force the player's starter to be shiny.",
     },
     {
       key     = "shiny_all_gifts",
