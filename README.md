@@ -2,7 +2,7 @@
 
 A small quality-of-life companion mod for [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp) that lets you force your starter — and optionally scripted story gift Pokémon — to be shiny.
 
-**v1.2.0 adds support for both Gen 1 and the Gen 2 Gold beta.**
+**v1.2.0 adds support for both Gen 1 and the Gen 2 beta.**
 
 The mod must be enabled **before receiving the Pokémon** for it to be forced shiny.
 
