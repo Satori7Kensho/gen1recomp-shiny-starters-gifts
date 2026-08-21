@@ -1,12 +1,12 @@
 -- Shiny Gifts & Starters v1.2.0
--- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold)
+-- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold / Silver)
 --
 -- Only scripted gifts are touched:
 --   Gen 1: give_pokemon
 --   Gen 2: givepoke / giveegg
 --
 -- Real shiny-compatible DVs are written instead of only setting a visual flag.
--- This keeps Gold gifts shiny when they are rebuilt later from their stored DVs.
+-- This keeps Gen 2 gifts shiny when they are rebuilt later from their stored DVs.
 
 local Stats = require("src.pokemon.Stats")
 
@@ -25,7 +25,7 @@ local STARTERS = {
   TOTODILE  = true,
 }
 
--- Gold needs its own stat/gender refresh after its DVs are replaced.
+-- Gen 2 needs its own stat/gender refresh after its DVs are replaced.
 -- Keep this lazy so a Gen 1 boot never loads a Gen 2 engine module.
 local Gen2Mon
 local function getGen2Mon()
@@ -133,8 +133,8 @@ return function(mod)
       key     = "shiny_all_gifts",
       type    = "toggle",
       label   = "SHINY ALL GIFTS",
-      default = false,
-      help    = "Force every scripted story gift (including Gold gift eggs) to be shiny.",
+      default = true,
+      help    = "Force every scripted story gift (including Gen 2 gift eggs) to be shiny.",
     },
   })
 
@@ -147,7 +147,7 @@ return function(mod)
   end
 
   local function shouldForce(species)
-    if opt("shiny_all_gifts", false) then
+    if opt("shiny_all_gifts", true) then
       return true
     end
     return opt("shiny_starters", true)
@@ -194,7 +194,7 @@ return function(mod)
 
     local data = game and game.data
 
-    -- Gold calculates stats and gender from the original DVs during Mon.new,
+    -- Gen 2 calculates stats and gender from the original DVs during Mon.new,
     -- so refresh both after replacing those DVs.
     if Mon.refreshStats then
       Mon.refreshStats(mon, data)
@@ -211,7 +211,7 @@ return function(mod)
     mon.shiny = true
 
     if mon.isEgg then
-      -- Gold gift eggs intentionally stay at 0 HP until they hatch.
+      -- Gen 2 gift eggs intentionally stay at 0 HP until they hatch.
       mon.hp = 0
     elseif mon.maxHp then
       -- Newly received non-egg gifts arrive fully healed.
@@ -219,7 +219,7 @@ return function(mod)
     end
   end
 
-  -- script.command is shared by Gen 1 and Gold. Let the vanilla command create
+  -- script.command is shared by Gen 1 and Gen 2. Let the vanilla command create
   -- and add the mon first, then modify only that exact newly-created gift.
   -- Wild encounters never pass through these gift command names.
   mod.hooks:wrap("script.command", function(next, ctx, name, args, ...)
@@ -251,7 +251,7 @@ return function(mod)
     -- the gift has either been added or the give failed.
     local result = next(ctx, name, args, ...)
 
-    -- Gold's givepoke/giveegg are party-only. Gen 1 give_pokemon may box.
+    -- Gen 2's givepoke/giveegg are party-only. Gen 1 give_pokemon may box.
     local mon = findNewGift(save, seen, not gen2)
 
     if mon and shouldForce(mon.species) then
