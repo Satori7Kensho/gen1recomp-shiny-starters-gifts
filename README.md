@@ -1,4 +1,4 @@
-# Shiny Gifts & Starters for Gen1Recomp
+# Shiny Starters, Gifts & NPC Trades for Gen1Recomp
 
 A small quality-of-life companion mod for [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp) that lets you receive shiny starters, shiny scripted story gift Pokémon, and shiny Pokémon via in-game NPC trades.
 
