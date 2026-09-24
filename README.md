@@ -1,97 +1,146 @@
-# Shiny Gifts & Starters for Gen1Recomp
+# Shiny Gifts & Starters v1.3.0
 
-A small quality-of-life companion mod for [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp) that lets you force your starter — and optionally scripted story gift Pokémon — to be shiny.
+A [Gen1Recomp](https://github.com/bryanthaboi/gen1recomp) mod with independent
+options for shiny lab starters, scripted gifts, and in-game NPC trades.
 
-**v1.2.0 adds support for both Gen 1 and the Gen 2 beta.**
-
-The mod must be enabled **before receiving the Pokémon** for it to be forced shiny.
-
-> **Important:** If you enable this mod while Gen1Recomp is already running, **fully close and reopen Gen1Recomp before receiving your starter or gift Pokémon**. Enabling the mod mid-session without restarting may cause the Pokémon to be received normally instead of shiny.
-
-## Supported Games
-
-* Pokémon Red
-* Pokémon Blue
-* Pokémon Yellow
-* Pokémon Gold 
-* Pokémon Silver
-
-## Options
-
-* **SHINY STARTERS** – Forces the player's starter to be shiny when the mod is enabled before receiving it.
-
-  * Gen 1: Bulbasaur, Charmander, Squirtle, and Pikachu
-  * Gen 2: Chikorita, Cyndaquil, and Totodile
-
-* **SHINY ALL GIFTS** – Forces scripted story gift Pokémon to be shiny when enabled before receiving them.
-
-  * Includes gifts such as fossils, Lapras, Eevee, and other scripted gifts.
-  * Gen 2 support also includes scripted gift eggs, including Togepi.
-
-Wild Pokémon are **not** affected by this mod.
-
-## How it works
-
-The mod writes real shiny-compatible DVs to the Pokémon rather than only applying a visual shiny flag.
-
-For Gen 1, the Pokémon will be shiny but without another mod to show its shiny (I used [Shiny Pokémon](https://github.com/masterwebx/gen1recomp-shiny-pokemon)), it will look normal. 
-
-For Gen 2, this uses the native shiny DV rules, so gifted Pokémon remain genuinely shiny when their data is rebuilt from the save.
-
+The focused gameplay checks passed for LeafGreen's Squirtle starter, Yellow's
+Bulbasaur gift, FireRed's Farfetch'd trade, and LeafGreen shiny save/reload
+persistence. Final v1.3.0 uses the same gameplay code and launcher options as
+the tested rc2. Only the version metadata/comment and documentation changed.
 
 ## Installation
 
-### Mod Index
+1. Fully close Gen1Recomp.
+2. Replace the old Shiny Gifts & Starters folder/package with this release.
+   Keep only one active copy; remove/disable old trade probes and egg-test mods.
+3. Extract the ZIP so the files are directly under
+   `mods/shiny_starters_gifts/`, including `manifest.json`, `main.lua`, and
+   `options.lua`. Avoid an extra nested folder.
+4. Reopen the launcher, enable the mod, and confirm it shows **1.3.0**.
+   Check the three option values; existing settings use the same saved keys.
+5. Fully restart after changing options, then receive a new Pokemon to use
+   those settings. Preserve a save from before an event if you want to repeat it.
 
-If available through the Gen1Recomp Mod Index, install or update the mod directly through the in-game mod manager.
+The upgrade does not reset Pokemon, saves, or existing shininess. The ZIP does
+not contain game saves, ROMs, extracted assets, test harnesses, or engine source.
 
-### Manual Installation
+## Independent options
 
-1. Download the latest release ZIP.
-2. Place/extract the `shiny_starters_gifts` folder into your Gen1Recomp `mods/` folder.
-3. Enable the mod with **F10**.
-4. **Fully close and reopen Gen1Recomp after enabling the mod.**
-5. Make sure the desired option is enabled **before receiving the Pokémon**.
+All three switches default to ON and are available in the launcher.
 
-## Compatibility
+| Option | Effect |
+| --- | --- |
+| SHINY STARTERS | Makes the starter received at Oak's or Elm's lab shiny. |
+| SHINY GIFTS | Makes other supported scripted gifts and gift eggs shiny. Excludes the lab starter and NPC trades. |
+| SHINY TRADES | Makes Pokemon received from supported in-game NPC trades shiny. |
 
-The mod only intercepts the scripted commands used to give Pokémon to the player.
+**Each switch controls its own category.** Yellow's later Bulbasaur, Charmander,
+and Squirtle gifts follow Gifts, even though those species are starters in other
+games. Gift eggs follow Gifts, including an egg of a starter species.
 
-It does **not** alter:
-- Wild encounter shiny rates
-- Trainer Pokémon
-- Random encounters
-- Pokémon already owned by the player
+OFF leaves an event unforced; it does not remove shininess from Pokemon already
+received. Natural shinies or shininess caused by another mod can still occur.
+All OFF leaves all three categories unforced by this mod.
 
-It is designed to coexist with visual shiny mods, follower mods, voxel/battle-art mods, and other mods that display shininess.
+The visible SHINY ALL GIFTS option is now named SHINY GIFTS. Its saved key
+`shiny_all_gifts` is retained. Mod ID, saved option keys, and defaults are unchanged.
 
-Originally tested alongside the following mods:
+## Requirements and scope
 
-* [Shiny Pokémon](https://github.com/masterwebx/gen1recomp-shiny-pokemon)
-* [Wilds of Kanto / Overworld Wild Spawns](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod)
-* [PokéPC Followers / PokePCFollowers VoxelMerge](https://github.com/gamecorner-033/PokePCFollowers)
-* [Dramatic Shape Voxel Mod](https://github.com/DramaticShape/DramaticShapeVoxelMod)
-* [Crystal Animated Sprites with Shiny Visuals](https://github.com/distilledorion-sketch/crystal_animated_sprites_with_shiny_visuals)
+- Declared minimum: **Gen1Recomp v0.3.5**, mod API 2.
+- Declared games: Red, Blue, Yellow, Gold, Silver, Crystal, FireRed, LeafGreen.
+- Permission: `engine_internals`, needed for the existing generation-specific paths.
+- The minimum and game declarations are compatibility metadata, not evidence
+  that every game, ROM revision, or later engine version has been tested.
+- Gen 3 NPC-trade internals were inspected in v0.3.5. A future engine change
+  may require a compatibility update.
 
-## v1.2.0
+Player-to-player/link trades, wild encounters, trainer Pokemon, and Pokemon
+already owned are outside this mod's conversion paths. The final build does
+not hook link-trade handlers; a live link session was not tested for this release.
 
-* Added support for the Gen 2 Gold and Silver beta.
-* Added Chikorita, Cyndaquil, and Totodile starter support.
-* Added cross-generation handling for scripted gift Pokémon.
-* Added support for Gen 2 scripted gift eggs, including Togepi.
-* Updated the mod to use Gen1Recomp's shared cross-generation scripting hooks.
-* Preserves real shiny-compatible DVs rather than applying only a visual shiny flag.
-* Preserves already-shiny Pokémon created by another mod.
-* Identifies the exact newly received gift instead of modifying another Pokémon of the same species.
-* Shiny Starters now defaults to **ON**.
-* Shiny All Gifts now defaults to **ON**.
-* Wild Pokémon remain unaffected.
+## Gameplay results
 
-## Notes
+These are user-reported results from rc2, whose gameplay code is unchanged in
+final v1.3.0. The exact engine/ROM revisions for these runs were not supplied,
+so no additional version-specific runtime claim is made.
 
-Gen 2 support targets the current **Gold beta** implementation of Gen1Recomp. Because Gen 2 support is still under active development, future Gen1Recomp updates may require corresponding updates to this mod.
+| Game and event | Settings tested | Result |
+| --- | --- | --- |
+| LeafGreen lab Squirtle | Each switch enabled individually | Shiny with Starters only; ordinary with Gifts only or Trades only. |
+| LeafGreen shiny Squirtle persistence | Save, disable all switches, fully restart and reload | Squirtle remained shiny. |
+| Yellow Cerulean Bulbasaur gift | Each switch enabled individually; all OFF | Shiny with Gifts only; ordinary with Starters only, Trades only, or all OFF. |
+| FireRed Spearow to Farfetch'd NPC trade | Trades only; Trades OFF with Starters only, Gifts only, or both ON | Shiny with Trades only; ordinary in all three tested Trades-OFF cases. |
+
+The user also observed shiny starter Pikachu in Yellow; the full settings were
+not recorded for that observation. FireRed shiny colors appeared in the reported
+run, but a summary star was absent. This release does not change that UI or claim
+to fix the missing star. Stats alone do not establish shininess.
+
+These focused option-separation checks are complete for the listed cases.
+There is no need to repeat them for a version/documentation-only promotion.
+See [REGRESSION_CHECKLIST.md](REGRESSION_CHECKLIST.md) for the detailed completed
+checks and optional coverage that remains untested.
+
+## Earlier beta evidence
+
+The following results predate rc2's independent option routing. They support
+the retained conversion paths and are not relabeled as final-build playtests.
+
+| Case | Earlier evidence and limit |
+| --- | --- |
+| Yellow NPC trade | User received shiny Mr. Mime for Clefairy; does not separately verify Red/Blue trades. |
+| Crystal NPC trade | User received shiny Onix for Bellsprout on v0.3.1; does not separately verify Gold/Silver trades. |
+| Crystal starters and ordinary gifts | Successful tests recorded in prior beta notes. |
+| FireRed starter, ordinary gift, boxed gift | Successful data-level tests recorded in prior beta notes. |
+| FireRed gift persistence | Prior shiny PID save/close/reload check passed; does not establish NPC-trade persistence. |
+| LeafGreen starter | Prior v0.3.1 diagnostic reported shiny XOR 5 and the engine shiny check true. |
+| Gen 3 gift eggs | A command harness exercised the real `giveegg` path, reporting shiny XOR 4 and the engine shiny check true. Natural gift acquisition and hatching, and separate runs in both titles, were not established. |
+| FireRed native trade handoff | A probe confirmed `natives_trade._offered` reaches the party. Beta.6 changed PID 353977303 to 616498903, producing XOR 2 and `SummaryData.isShiny = true` on `_offered`. The later rc2 user test above confirmed a visibly shiny received Farfetch'd. |
+
+The historical v0.3.1 results do not lower this release's declared v0.3.5 minimum.
+LeafGreen NPC trades, fresh results for every other title, natural eggs/hatching,
+and actual link sessions are not covered by the focused rc2 gameplay results.
+
+## Implementation and preserved behavior
+
+Gen 1 uses `give_pokemon`; Gen 2/Crystal use `givepoke` and `giveegg`. Their NPC
+trades use the shared `trade` command. The mod modifies the newly received
+Pokemon's stored shiny-compatible DVs, preserving already-canonical shiny DVs.
+Gen 2 stats/gender are refreshed and gift eggs retain their pre-hatch zero HP.
+Changing DVs can change Gen 1/2 stats and gender.
+
+FireRed/LeafGreen gifts use `givemon` and `giveegg`. The retained Gen III PID
+search uses OT ID, Secret ID (zero if absent), and PID halves to obtain shiny
+XOR 0-7 while preserving nature, the low PID byte (gender), and ability parity.
+It handles gifts placed in Gen 3 PC storage without overriding displayed shininess.
+
+For Gen 3 NPC trades, the original `natives.ALLOW["special:253"]` runs first and
+creates `natives_trade._offered`. The mod makes that object shiny before special
+254 runs the vanilla trade scene and transfers it. Special 254, shared transfer
+functions, and player-to-player/link-trade handlers are not wrapped.
+
+Starter routing checks species and the script's lab location before the gift
+handler runs. Other scripted gifts and every gift egg use Gifts. Custom starter
+scripts outside the recognized lab locations have not been verified.
+
+The beta diagnostic writers, pending-trade diagnostic state, and beta-only
+update watcher were removed before rc2. This release creates no beta/probe
+diagnostic files or overlays and does not delete old logs.
+
+## Validation
+
+The release build runs the official v0.3.5 modkit's strict fixture validation,
+distribution lint, Gen 2/Gen 3 compatibility checks, and package gate. A LuaJIT
+regression harness checks the independent option matrix, conversion behavior,
+gift/egg/box/trade/pass-through/cancellation cases, PID traits, the real Gen 3
+script context, and the v0.3.5 native handoff with controlled ROM/UI substitutes.
+
+Offline checks supplement the specific user gameplay results above. They do not
+prove untested natural events or all game/version combinations. The compatibility
+analyzers retain one unresolved lazy Gen 2 module-return note (`main.lua:44`),
+which is recorded as a static-analysis limitation.
 
 ## License
 
-MIT
-
+MIT. See [LICENSE](LICENSE).

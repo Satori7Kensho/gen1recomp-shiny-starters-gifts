@@ -1,12 +1,21 @@
 {
   "id": "shiny_starters_gifts",
   "name": "Shiny Gifts & Starters",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "entry": "main.lua",
   "api": 2,
-  "games": ["gen1", "gen2"],
-  "description": "Force starters and scripted story gifts to be shiny in Red, Blue, Yellow, Gold, and Silver.",
+  "games": [
+    "gen1",
+    "gen2",
+    "firered",
+    "leafgreen"
+  ],
+  "description": "Force starters, scripted gifts, and in-game NPC trade Pokemon to be shiny in Red, Blue, Yellow, Gold, Silver, Crystal, FireRed, and LeafGreen.",
   "category": "QOL",
   "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts",
-  "permissions": ["engine_internals"]
+  "permissions": [
+    "engine_internals"
+  ],
+  "game_version": ">=0.3.5",
+  "options_schema": "options.lua"
 }
