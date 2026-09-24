@@ -10,7 +10,7 @@
     "firered",
     "leafgreen"
   ],
-  "description": "Force starters, scripted gifts, and in-game NPC trade Pokemon to be shiny in Red, Blue, Yellow, Gold, Silver, Crystal, FireRed, and LeafGreen.",
+  "description": "Starters, scripted gifts, and in-game NPC trade Pokemon to be shiny in Red, Blue, Yellow, Gold, Silver, Crystal, FireRed, and LeafGreen.",
   "category": "QOL",
   "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts",
   "permissions": [
