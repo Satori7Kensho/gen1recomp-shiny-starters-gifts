@@ -1,4 +1,4 @@
--- Launcher / Mod Manager option schema for Shiny Gifts & Starters.
+-- Launcher / Mod Manager option schema for Shiny Starters, Gifts & NPC Trades.
 -- Keep keys/defaults synchronized with main.lua's mod.options:define() rows.
 -- The manifest's options_schema field lets the launcher show these settings
 -- before a game is started.
