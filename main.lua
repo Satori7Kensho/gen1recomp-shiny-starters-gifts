@@ -1,4 +1,4 @@
--- Shiny Gifts & Starters v1.3.0
+-- Shiny Starters, Gifts & NPC Trades for Gen1Recomp v1.3.0
 -- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold / Silver / Crystal) + Gen 3 (FireRed / LeafGreen)
 --
 -- Only scripted gifts and in-game NPC trades are touched:
