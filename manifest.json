@@ -1,7 +1,7 @@
 {
   "id": "shiny_starters_gifts",
   "name": "Shiny Starters, Gifts & NPC Trades",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "entry": "main.lua",
   "api": 2,
   "games": [
