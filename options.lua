@@ -1,4 +1,4 @@
--- Launcher / Mod Manager option schema for Shiny Starters, Gifts & NPC Trades.
+-- Launcher / Mod Manager option schema for Shiny Starters, Gifts, NPC Trades & Day Care Eggs.
 -- Keep keys/defaults synchronized with main.lua's mod.options:define() rows.
 -- The manifest's options_schema field lets the launcher show these settings
 -- before a game is started.
@@ -9,7 +9,7 @@ return {
     type = "toggle",
     label = "SHINY STARTERS",
     default = true,
-    description = "Force the starter received at Oak's or Elm's lab to be shiny. Other gifts use SHINY GIFTS.",
+    description = "Force the starter received from Oak, Elm, or Birch's bag to be shiny. Other gifts use SHINY GIFTS.",
   },
   {
     key = "shiny_all_gifts",
@@ -24,5 +24,12 @@ return {
     label = "SHINY TRADES",
     default = true,
     description = "Force Pokemon received from supported in-game NPC trades to be shiny.",
+  },
+  {
+    key = "shiny_daycare_eggs",
+    type = "toggle",
+    label = "SHINY DAY CARE EGGS",
+    default = true,
+    description = "Make eggs collected from the Day Care hatch shiny in Gen 2 and Gen 3. One-time gift eggs use SHINY GIFTS.",
   },
 }
