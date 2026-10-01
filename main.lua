@@ -1,13 +1,15 @@
--- Shiny Starters, Gifts & NPC Trades for Gen1Recomp v1.3.0
--- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold / Silver / Crystal) + Gen 3 (FireRed / LeafGreen)
+-- Shiny Starters, Gifts, NPC Trades & Day Care Eggs for Gen1Recomp v1.4.0
+-- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold / Silver / Crystal)
+-- + Gen 3 (FireRed / LeafGreen / Emerald)
 --
--- Only scripted gifts and in-game NPC trades are touched:
+-- Only scripted gifts, in-game NPC trades, and Day Care eggs are touched:
 --   Gen 1: give_pokemon / trade
---   Gen 2: givepoke / giveegg / trade
---   Gen 3: givemon / giveegg / NPC special:253
+--   Gen 2: givepoke / giveegg / Crystal Odd Egg / trade / Day Care collection
+--   Gen 3: givemon / giveegg / Day Care collection
+--          NPC special:253 (FRLG) or :256 (Emerald)
 --
 -- Gen 1/2 use real shiny-compatible DVs.
--- FireRed / LeafGreen use a real Gen 3 shiny PID derived from OT ID / Secret ID while
+-- Gen 3 uses a real shiny PID derived from OT ID / Secret ID while
 -- preserving the generated Pokemon's nature, gender byte, and ability parity.
 
 local Stats = require("src.pokemon.Stats")
@@ -32,6 +34,13 @@ local GEN3_STARTERS = {
   [1] = true, -- Bulbasaur
   [4] = true, -- Charmander
   [7] = true, -- Squirtle
+}
+
+-- Emerald's internal species ids differ from National Pokédex numbers.
+local EMERALD_STARTERS = {
+  [277] = true, -- Treecko
+  [280] = true, -- Torchic
+  [283] = true, -- Mudkip
 }
 
 -- Gen 2 needs its own stat/gender refresh after its DVs are replaced.
@@ -243,7 +252,7 @@ return function(mod)
       type    = "toggle",
       label   = "SHINY STARTERS",
       default = true,
-      help    = "Force the starter received at Oak's or Elm's lab to be shiny. Other gifts use SHINY GIFTS.",
+      help    = "Force the starter received from Oak, Elm, or Birch's bag to be shiny. Other gifts use SHINY GIFTS.",
     },
     {
       key     = "shiny_all_gifts",
@@ -257,7 +266,14 @@ return function(mod)
       type    = "toggle",
       label   = "SHINY TRADES",
       default = true,
-      help    = "Force Pokemon received from in-game NPC trades to be shiny (Gen 1 + Gen 2/Crystal + FireRed/LeafGreen).",
+      help    = "Force Pokemon received from in-game NPC trades to be shiny (Gen 1, Gen 2, FireRed/LeafGreen, Emerald).",
+    },
+    {
+      key     = "shiny_daycare_eggs",
+      type    = "toggle",
+      label   = "SHINY DAY CARE EGGS",
+      default = true,
+      help    = "Make eggs collected from the Day Care hatch shiny in Gen 2 and Gen 3. One-time gift eggs use SHINY GIFTS.",
     },
   })
 
@@ -367,7 +383,7 @@ return function(mod)
     local pid, why = makeGen3ShinyPid(mon)
     if not pid then return false, why end
 
-    -- Do not rely on FireRed's explicit isShiny override; the PID itself is
+    -- Do not rely on Gen 3's explicit isShiny override; the PID itself is
     -- made canonical so the shiny state survives save/reload.
     mon.isShiny = nil
     mon.personality = pid
@@ -389,53 +405,130 @@ return function(mod)
       mon.nature = pid % 25
     end
 
-    -- Compatibility hint for display mods; FireRed's own shiny determination
+    -- Compatibility hint for display mods; Gen 3's shiny determination
     -- comes from the canonical PID above, not this convenience field.
     mon.shiny = true
     return true, why
   end
 
-  -- Gen 3 in-game NPC trades are native specials, not the shared Gen 1/2
-  -- `trade` script command. Gen1Recomp v0.3.5 uses:
-  --   special:253 = CreateInGameTradePokemon
-  --     -> creates MODULES.natives_trade._offered
-  --   special:254 = DoInGameTradeScene
-  --     -> transfers that created Pokemon into the player's party
-  --
-  -- Wrap only special:253 and make the already-created _offered Pokemon shiny
-  -- before the vanilla trade scene consumes it. Link/online trades live in the
-  -- separate natives_link module and are intentionally untouched.
-  local gen3TradeHookInstalled = false
-  local gen3TradeHookError = nil
+  -- Gen 2 Day Care eggs are built before collection, but collectEgg moves the
+  -- same egg table into the party. Change it only after a successful pickup;
+  -- an egg already waiting at the Day Care will still follow the option then.
+  local gen2DaycareHookInstalled = false
+  local function installGen2DaycareHook()
+    if gen2DaycareHookInstalled then return true end
+    local ok, breeding = pcall(require, "src.core.gen2.Breeding")
+    if not ok or type(breeding) ~= "table" or type(breeding.collectEgg) ~= "function" then
+      return false
+    end
+
+    local original = breeding.collectEgg
+    breeding.collectEgg = function(data, save, ...)
+      local received, egg = original(data, save, ...)
+      if received and type(egg) == "table" and egg.isEgg
+          and opt("shiny_daycare_eggs", true) then
+        applyGen2Shiny(egg, { data = data })
+      end
+      return received, egg
+    end
+    gen2DaycareHookInstalled = true
+    return true
+  end
+
+  -- Emerald's starter is given by an async native callback after the player
+  -- chooses a Poké Ball on Route 101, rather than by the givemon command.
+  local emeraldStarterHookInstalled = false
+  local function installEmeraldStarterHook()
+    if emeraldStarterHookInstalled then return true end
+    local ok, field = pcall(require, "src.core.game3.scripting.natives_field_rse")
+    if not ok or type(field) ~= "table" or type(field.giveStarter) ~= "function" then
+      return false
+    end
+
+    local original = field.giveStarter
+    field.giveStarter = function(ctx, selection, session)
+      local save = type(session) == "table" and { gen3 = session } or nil
+      local seen = save and snapshotGen3Mons(save) or nil
+      local species, code = original(ctx, selection, session)
+
+      if save and (code == 0 or code == 1)
+          and session.version == "emerald"
+          and EMERALD_STARTERS[tonumber(species)]
+          and opt("shiny_starters", true) then
+        local mon = findNewGen3Gift(save, seen)
+        if mon and tonumber(mon.species or mon.speciesId) == tonumber(species) then
+          applyGen3Shiny(mon, mod.game)
+        end
+      end
+
+      return species, code
+    end
+    emeraldStarterHookInstalled = true
+    return true
+  end
+
+  -- Gen 3 NPC trades create the received Pokémon in a native special before
+  -- the trade scene transfers it. FRLG uses special:253; Emerald uses :256.
+  -- Emerald's native module forwards to natives_trade but does not expose it
+  -- through natives.MODULES, so obtain the shared trade module directly.
+  local tradeHooks = {}
   local activeGen3Game = nil
-  local function installGen3TradeHook(game)
+  -- The Gen 3 Day Care uses a native special rather than the script giveegg
+  -- command. Both FRLG and Emerald call this shared egg-collection function.
+  local gen3DaycareHookInstalled = false
+  local function installGen3DaycareHook()
+    if gen3DaycareHookInstalled then return true end
+    local ok, breeding = pcall(require, "src.core.game3.breeding")
+    if not ok or type(breeding) ~= "table"
+        or type(breeding.giveEggFromDaycare) ~= "function" then
+      return false
+    end
+
+    local original = breeding.giveEggFromDaycare
+    breeding.giveEggFromDaycare = function(session, ...)
+      local egg = original(session, ...)
+      local version = type(session) == "table" and session.version or nil
+      if type(egg) == "table" and egg.isEgg
+          and (version == "firered" or version == "leafgreen" or version == "emerald")
+          and opt("shiny_daycare_eggs", true) then
+        applyGen3Shiny(egg, activeGen3Game)
+      end
+      return egg
+    end
+    gen3DaycareHookInstalled = true
+    return true
+  end
+  local function installGen3TradeHook(game, session)
     activeGen3Game = game or activeGen3Game
-    if gen3TradeHookInstalled then return true end
-    if gen3TradeHookError then return false end
+    local version = type(session) == "table" and session.version or nil
+    if version ~= "emerald" and version ~= "firered" and version ~= "leafgreen" then
+      return false
+    end
 
     local ok, natives = pcall(require, "src.core.game3.scripting.natives")
     if not ok or type(natives) ~= "table" then
       return false
     end
 
+    -- Binding a different game rebuilds ALLOW; reinstall if it was rebuilt.
+    if type(natives.ensureBound) == "function" then
+      local bound = pcall(natives.ensureBound, session)
+      if not bound then return false end
+    end
     local allow = natives.ALLOW
-    local modules = natives.MODULES
-    local trade = type(modules) == "table" and modules.natives_trade or nil
-
-    if type(allow) ~= "table" or type(trade) ~= "table" then
+    local okTrade, trade = pcall(require, "src.core.game3.scripting.natives_trade")
+    if type(allow) ~= "table" or not okTrade or type(trade) ~= "table" then
       return false
     end
 
-    -- v0.3.5 stores native-special dispatchers in a flat ALLOW table using
-    -- string keys such as "special:253".
-    local key = "special:253"
+    local key = version == "emerald" and "special:256" or "special:253"
+    if tradeHooks[key] and allow[key] == tradeHooks[key] then return true end
     local original = allow[key]
     if type(original) ~= "function" then
-      gen3TradeHookError = "special:253 unavailable"
       return false
     end
 
-    allow[key] = function(...)
+    local wrapper = function(...)
       local results = table.pack and table.pack(original(...)) or { original(...) }
 
       -- The vanilla special has now created the received NPC-trade Pokemon.
@@ -450,7 +543,8 @@ return function(mod)
       return unpack(results)
     end
 
-    gen3TradeHookInstalled = true
+    allow[key] = wrapper
+    tradeHooks[key] = wrapper
     return true
   end
 
@@ -460,13 +554,19 @@ return function(mod)
   mod.hooks:wrap("script.command", function(next, ctx, name, args, ...)
     local generation = tonumber(ctx and ctx.generation) or 1
 
-    -- Install the targeted FireRed/LeafGreen NPC-trade native hook only after
-    -- the live Gen 3 scripting runtime exists. This avoids loading/patching Gen 3
-    -- internals during Gen 1/2 boots.
+    -- Install native hooks only after the live Gen 3 scripting runtime exists.
     if generation == 3 then
       local liveGame = (ctx and ctx.game) or mod.game
       activeGen3Game = liveGame or activeGen3Game
-      installGen3TradeHook(activeGen3Game)
+      local save = ctx and ctx.save
+      local raw = type(save) == "table" and save.gen3 or nil
+      if type(raw) == "table" and raw.version == "emerald" then
+        installEmeraldStarterHook()
+      end
+      installGen3DaycareHook()
+      installGen3TradeHook(activeGen3Game, raw)
+    elseif generation == 2 then
+      installGen2DaycareHook()
     end
 
     -- Gen 1/2 in-game NPC trades use the shared `trade` script command.
@@ -497,11 +597,19 @@ return function(mod)
     end
 
     local isGift
+    local crystalOddEgg = false
 
     if generation == 3 then
       isGift = (name == "givemon" or name == "giveegg")
     elseif generation == 2 then
-      isGift = (name == "givepoke" or name == "giveegg")
+      -- Crystal's one-time Odd Egg is created by `special GiveOddEgg`, not
+      -- `giveegg`. The VM passes its decoded row as the fourth hook argument.
+      local row = select(1, ...)
+      local vm = ctx and ctx.vm
+      crystalOddEgg = name == "special" and type(row) == "table"
+        and type(vm) == "table" and type(vm.specialName) == "function"
+        and vm:specialName(row.id) == "GiveOddEgg"
+      isGift = (name == "givepoke" or name == "giveegg" or crystalOddEgg)
     else
       isGift = (name == "give_pokemon")
     end
@@ -539,7 +647,8 @@ return function(mod)
     -- Gen 2's givepoke/giveegg are party-only. Gen 1 give_pokemon may box.
     local mon = findNewGift(save, seen, generation ~= 2)
 
-    if mon and shouldForce(mon, generation, mapId, name) then
+    if mon and (not crystalOddEgg or mon.isEgg)
+        and shouldForce(mon, generation, mapId, name) then
       if generation == 2 then
         applyGen2Shiny(mon, game)
       else
