@@ -1,16 +1,17 @@
 {
   "id": "shiny_starters_gifts",
-  "name": "Shiny Starters, Gifts & NPC Trades",
-  "version": "1.3.1",
+  "name": "Shiny Starters, Gifts, NPC Trades & Day Care Eggs",
+  "version": "1.4.0",
   "entry": "main.lua",
   "api": 2,
   "games": [
     "gen1",
     "gen2",
     "firered",
-    "leafgreen"
+    "leafgreen",
+    "emerald"
   ],
-  "description": "Starters, scripted gifts, and in-game NPC trade Pokemon to be shiny in Red, Blue, Yellow, Gold, Silver, Crystal, FireRed, and LeafGreen.",
+  "description": "Shiny starters, scripted gifts, and NPC trades across Gen 1-3; shiny Day Care eggs in Gen 2 and Gen 3.",
   "category": "QOL",
   "github": "Satori7Kensho/gen1recomp-shiny-starters-gifts",
   "permissions": [
