@@ -1,12 +1,13 @@
--- Shiny Starters, Gifts, NPC Trades & Day Care Eggs for Gen1Recomp v1.4.0
+-- Shiny Starters, Gifts, NPC Trades & Day Care Eggs for Gen1Recomp v1.6.3
 -- Gen 1 (Red / Blue / Yellow) + Gen 2 (Gold / Silver / Crystal)
--- + Gen 3 (FireRed / LeafGreen / Emerald)
+-- + Gen 3 (FireRed / LeafGreen / Ruby / Sapphire / Emerald)
 --
--- Only scripted gifts, in-game NPC trades, and Day Care eggs are touched:
+-- Only newly received gifts, in-game NPC trades, and Day Care eggs are touched:
 --   Gen 1: give_pokemon / trade
 --   Gen 2: givepoke / giveegg / Crystal Odd Egg / trade / Day Care collection
 --   Gen 3: givemon / giveegg / Day Care collection
---          NPC special:253 (FRLG) or :256 (Emerald)
+--          NPC special:253 (FRLG / Ruby / Sapphire) or :256 (Emerald)
+--   Gen 3 Mystery/Event gifts and launcher Box reward eggs have separate options.
 --
 -- Gen 1/2 use real shiny-compatible DVs.
 -- Gen 3 uses a real shiny PID derived from OT ID / Secret ID while
@@ -36,8 +37,9 @@ local GEN3_STARTERS = {
   [7] = true, -- Squirtle
 }
 
--- Emerald's internal species ids differ from National Pokédex numbers.
-local EMERALD_STARTERS = {
+-- Ruby/Sapphire/Emerald share these internal species ids, which differ
+-- from National Pokédex numbers.
+local HOENN_STARTERS = {
   [277] = true, -- Treecko
   [280] = true, -- Torchic
   [283] = true, -- Mudkip
@@ -156,10 +158,19 @@ local function xor16(a, b)
   return result
 end
 
+-- Gen 3 may store the full trainer identity in otId (SID in its high half),
+-- or supply otSecretId separately. Match the engine's canonical shiny check:
+-- an explicit Secret ID takes precedence, including an explicit zero.
+local function gen3TrainerIds(mon)
+  local full = math.floor(tonumber(mon.otId or mon.trainerId) or 0) % 4294967296
+  local tid = full % 65536
+  local sid = math.floor(tonumber(mon.otSecretId) or math.floor(full / 65536)) % 65536
+  return tid, sid
+end
+
 local function gen3ShinyXor(mon, personality)
   if type(mon) ~= "table" then return nil end
-  local tid = math.floor(tonumber(mon.otId) or 0) % 65536
-  local sid = math.floor(tonumber(mon.otSecretId) or 0) % 65536
+  local tid, sid = gen3TrainerIds(mon)
   local p = math.floor(tonumber(personality or mon.personality) or 0)
   local lo = p % 65536
   local hi = math.floor(p / 65536) % 65536
@@ -183,8 +194,7 @@ local function makeGen3ShinyPid(mon)
   nature = math.floor(nature) % 25
 
   local lowByte = original % 256
-  local tid = math.floor(tonumber(mon.otId) or 0) % 65536
-  local sid = math.floor(tonumber(mon.otSecretId) or 0) % 65536
+  local tid, sid = gen3TrainerIds(mon)
   local trainerXor = xor16(tid, sid)
 
   for upperLowByte = 0, 255 do
@@ -206,8 +216,12 @@ local function addGen3StorageSeen(seen, raw)
   local boxes = type(storage) == "table" and storage.boxes or nil
   if type(boxes) ~= "table" then return end
   for _, box in pairs(boxes) do
-    if type(box) == "table" then
-      addSeen(seen, box.mons)
+    if type(box) == "table" and type(box.mons) == "table" then
+      -- PC slots are sparse. ipairs would stop at the first empty slot and
+      -- let a previously owned Pokemon be mistaken for a new boxed gift.
+      for _, mon in pairs(box.mons) do
+        if type(mon) == "table" then seen[mon] = true end
+      end
     end
   end
 end
@@ -252,28 +266,42 @@ return function(mod)
       type    = "toggle",
       label   = "SHINY STARTERS",
       default = true,
-      help    = "Force the starter received from Oak, Elm, or Birch's bag to be shiny. Other gifts use SHINY GIFTS.",
+      help    = "Force the starter received from Oak, Elm, or Birch's bag to be shiny. Other story gifts use SHINY STORY GIFTS.",
     },
     {
       key     = "shiny_all_gifts",
       type    = "toggle",
-      label   = "SHINY GIFTS",
+      label   = "SHINY STORY GIFTS",
       default = true,
-      help    = "Force scripted gifts and gift eggs to be shiny. Excludes the lab starter and NPC trades.",
+      help    = "Force scripted story gifts and one-time story gift eggs to be shiny. Starters, NPC trades, Mystery/Event gifts and Box rewards use their own settings.",
     },
     {
       key     = "shiny_trades",
       type    = "toggle",
       label   = "SHINY TRADES",
       default = true,
-      help    = "Force Pokemon received from in-game NPC trades to be shiny (Gen 1, Gen 2, FireRed/LeafGreen, Emerald).",
+      help    = "Force Pokemon received from in-game NPC trades to be shiny (Gen 1, Gen 2, FireRed/LeafGreen, Ruby/Sapphire/Emerald).",
     },
     {
       key     = "shiny_daycare_eggs",
       type    = "toggle",
       label   = "SHINY DAY CARE EGGS",
       default = true,
-      help    = "Make eggs collected from the Day Care hatch shiny in Gen 2 and Gen 3. One-time gift eggs use SHINY GIFTS.",
+      help    = "Make eggs collected from the Day Care hatch shiny in Gen 2 and Gen 3. One-time gift eggs use SHINY STORY GIFTS.",
+    },
+    {
+      key     = "shiny_mystery_event_gifts",
+      type    = "toggle",
+      label   = "SHINY MYSTERY/EVENT GIFTS",
+      default = true,
+      help    = "Makes Pokémon and gift eggs received through Mystery Gift or Mystery Event shiny.",
+    },
+    {
+      key     = "shiny_box_rewards",
+      type    = "toggle",
+      label   = "SHINY BOX REWARDS",
+      default = true,
+      help    = "Makes newly received Box reward eggs shiny. See README for the required setup.",
     },
   })
 
@@ -383,6 +411,13 @@ return function(mod)
     local pid, why = makeGen3ShinyPid(mon)
     if not pid then return false, why end
 
+    -- Native save export reads the separate Secret ID field. Preserve the
+    -- same full trainer identity when otId originally held both halves.
+    if mon.otSecretId == nil then
+      local _, sid = gen3TrainerIds(mon)
+      mon.otSecretId = sid
+    end
+
     -- Do not rely on Gen 3's explicit isShiny override; the PID itself is
     -- made canonical so the shiny state survives save/reload.
     mon.isShiny = nil
@@ -453,7 +488,7 @@ return function(mod)
 
       if save and (code == 0 or code == 1)
           and session.version == "emerald"
-          and EMERALD_STARTERS[tonumber(species)]
+          and HOENN_STARTERS[tonumber(species)]
           and opt("shiny_starters", true) then
         local mon = findNewGen3Gift(save, seen)
         if mon and tonumber(mon.species or mon.speciesId) == tonumber(species) then
@@ -467,14 +502,268 @@ return function(mod)
     return true
   end
 
+  -- Ruby/Sapphire's special:156 opens the starter picker, then its onDone
+  -- callback calls Party.giveMonToPlayer directly before the first battle.
+  -- Wrap only that picker callback; restore the shared party function even
+  -- if the callback fails. Other gifts of Hoenn starter species stay gifts.
+  local function wrapRubySapphireStarterChoice(game, session)
+    local okChoose, choose = pcall(require, "src.ui.game3.rse.starter_choose")
+    local okParty, party = pcall(require, "src.core.game3.party")
+    if not okChoose or type(choose) ~= "table" or type(choose.active) ~= "function"
+        or not okParty or type(party) ~= "table"
+        or type(party.giveMonToPlayer) ~= "function" then
+      return false
+    end
+    local screen = choose.active()
+    if type(screen) ~= "table" or type(screen.onDone) ~= "function" then
+      return false
+    end
+
+    local onDone = screen.onDone
+    screen.onDone = function(...)
+      local original = party.giveMonToPlayer
+      party.giveMonToPlayer = function(receivingSession, species, ...)
+        local code, mon, boxId, slotIdx = original(receivingSession, species, ...)
+        if receivingSession == session and (code == 0 or code == 1)
+            and HOENN_STARTERS[tonumber(species)] and type(mon) == "table"
+            and tonumber(mon.species or mon.speciesId) == tonumber(species)
+            and opt("shiny_starters", true) then
+          applyGen3Shiny(mon, game)
+        end
+        return code, mon, boxId, slotIdx
+      end
+
+      local ok, err = pcall(onDone, ...)
+      party.giveMonToPlayer = original
+      if not ok then error(err, 0) end
+    end
+    return true
+  end
+
   -- Gen 3 NPC trades create the received Pokémon in a native special before
-  -- the trade scene transfers it. FRLG uses special:253; Emerald uses :256.
+  -- the trade scene transfers it. FRLG and Ruby/Sapphire use special:253;
+  -- Emerald uses :256.
   -- Emerald's native module forwards to natives_trade but does not expose it
   -- through natives.MODULES, so obtain the shared trade module directly.
   local tradeHooks = {}
   local activeGen3Game = nil
+
+  -- These engine modules also serve the launcher. Keep one wrapper per method
+  -- and replace its callback when a new game loads, avoiding nested wrappers.
+  local function bindEventHook(moduleName, method, callback)
+    local ok, module = pcall(require, moduleName)
+    if not ok or type(module) ~= "table" or type(module[method]) ~= "function" then
+      return false
+    end
+    local key = "_shiny_starters_gifts_" .. method
+    local state = module[key]
+    if type(state) ~= "table" or module[method] ~= state.wrapper then
+      state = { original = module[method] }
+      state.wrapper = function(...) return state.callback(state.original, ...) end
+      module[key] = state
+      module[method] = state.wrapper
+    end
+    state.callback = callback
+    return true
+  end
+
+  local function eventEnabled(version, launcher)
+    if version ~= "ruby" and version ~= "sapphire" and version ~= "emerald"
+        and version ~= "firered" and version ~= "leafgreen" then return false end
+    local ok, saves = pcall(require, "src.core.SaveData")
+    local loaded, settings
+    if ok and type(saves.loadOptions) == "function" then
+      loaded, settings = pcall(saves.loadOptions)
+    end
+    if loaded and type(settings) == "table" then
+      if type(saves.isSafeMode) == "function" and saves.isSafeMode(settings) then return false end
+      if type(saves.modEnabled) == "function"
+          and saves.modEnabled(settings, "shiny_starters_gifts", version) == false then return false end
+      if launcher then
+        local bucket = type(settings.modOptions) == "table"
+          and settings.modOptions.shiny_starters_gifts
+        local value
+        if type(bucket) == "table" then value = bucket.shiny_box_rewards end
+        if value ~= nil then return value == true end
+        return true -- same default as both option schemas
+      end
+    elseif launcher then
+      -- A launcher claim must use the current saved settings, not a stale game.
+      return false
+    end
+    return opt(launcher and "shiny_box_rewards" or "shiny_mystery_event_gifts", true)
+  end
+
+  -- Event eggs can start with an event OT, then take the recipient's OT when
+  -- they hatch. Remember only eggs we made shiny so that this ownership change
+  -- cannot undo their shininess. Lua saves and Box preserve this receipt marker.
+  local EVENT_EGG_MARKER = "shiny_starters_gifts_event_egg"
+  local function applyEventShiny(mon, game)
+    local changed = applyGen3Shiny(mon, game)
+    if changed and (mon.isEgg or mon.egg) then mon[EVENT_EGG_MARKER] = true end
+    return changed
+  end
+
+  -- Desktop EXIT GAME restarts the Lua process, so the launcher cannot retain
+  -- our Gifts.create wrapper. Save a receipt boundary before leaving, then
+  -- recognize only new reward eggs actually withdrawn to this exact save.
+  -- Box's departure record proves the egg's identity; a species/OT guess would
+  -- also affect existing gifts or imported Pokemon. Never rewrite Box storage.
+  local BOX_RECEIPTS_KEY = "box_reward_receipts"
+  local function receiveBoxRewards(save, loading)
+    local version = type(save) == "table" and save.version
+    if version ~= "ruby" and version ~= "sapphire" and version ~= "emerald"
+        and version ~= "firered" and version ~= "leafgreen" then return end
+    local okS, saves = pcall(require, "src.core.SaveData")
+    local okB, store = pcall(require, "src.box.Store")
+    local okR, records = pcall(require, "src.box.Records")
+    if not okS or not okB or not okR or type(saves.persistenceFs) ~= "function"
+        or type(saves.saveFilename) ~= "function" or type(store.load) ~= "function"
+        or type(records.identity) ~= "function" then return end
+    local okFs, fs = pcall(saves.persistenceFs)
+    if not okFs or type(fs) ~= "table" then return end
+    local okState, state = pcall(store.load, fs)
+    local okPath, path = pcall(saves.saveFilename, version)
+    if not okState or type(state) ~= "table" or type(state.nextId) ~= "number"
+        or not okPath or type(path) ~= "string" then return end
+
+    save.modData = type(save.modData) == "table" and save.modData or {}
+    local bucket = save.modData.shiny_starters_gifts
+    if type(bucket) ~= "table" then bucket = {}; save.modData.shiny_starters_gifts = bucket end
+    local receipts = bucket[BOX_RECEIPTS_KEY]
+    local previouslyEnabled = false
+    for _, entry in ipairs(save.meta and save.meta.mods or {}) do
+      if type(entry) == "table" and entry.id == "shiny_starters_gifts" then
+        previouslyEnabled = true
+        break
+      end
+    end
+    if type(receipts) ~= "table" or type(receipts.sinceId) ~= "number"
+        or type(receipts.handled) ~= "table" or (loading and not previouslyEnabled) then
+      bucket[BOX_RECEIPTS_KEY] = { sinceId = state.nextId, handled = {} }
+      return -- existing rewards precede activation; do not change them
+    end
+
+    local function findEgg(identity)
+      local function visit(list)
+        for _, mon in pairs(type(list) == "table" and list or {}) do
+          if type(mon) == "table" and (mon.isEgg or mon.egg)
+              and records.identity(3, mon) == identity then return mon end
+        end
+      end
+      local mon = visit(save.party)
+      if mon then return mon end
+      for _, box in pairs(save.storage and save.storage.boxes or {}) do
+        if type(box) == "table" then
+          mon = visit(box.mons)
+          if mon then return mon end
+        end
+      end
+    end
+    for _, departure in pairs(state.departures or {}) do
+      local entry = type(departure) == "table" and departure.entry
+      if type(entry) == "table" and entry.generation == 3
+          and type(entry.id) == "number" and entry.id >= receipts.sinceId
+          and type(entry.gift) == "number" and entry.gift >= 1 and entry.gift <= 4
+          and departure.path == path and type(departure.identity) == "string"
+          and records.identity(3, entry.mon) == departure.identity then
+        local key = tostring(entry.id) .. "|" .. departure.identity
+        if not receipts.handled[key] then
+          local mon = findEgg(departure.identity)
+          if mon and (not opt("shiny_box_rewards", true)
+              or applyEventShiny(mon, mod.game)) then
+            receipts.handled[key] = true
+          end
+        end
+      end
+    end
+  end
+
+  if mod.events and type(mod.events.on) == "function" then
+    mod.events:on("save.loading", function(ev)
+      if type(ev) == "table" then receiveBoxRewards(ev.raw, true) end
+    end)
+    mod.events:on("save.writing", function(ev)
+      if type(ev) == "table" then receiveBoxRewards(ev.save, false) end
+    end)
+  end
+
+  local function forceNewEventMons(session, seen)
+    local function visit(list)
+      for _, mon in pairs(type(list) == "table" and list or {}) do
+        if type(mon) == "table" and not seen[mon] then
+          applyEventShiny(mon, activeGen3Game or mod.game)
+        end
+      end
+    end
+    visit(session.party)
+    for _, box in pairs(session.storage and session.storage.boxes or {}) do
+      if type(box) == "table" then visit(box.mons) end
+    end
+  end
+
+  local gen3EventHooksInstalled = false
+  local function installGen3EventHooks()
+    if gen3EventHooksInstalled then return end
+    bindEventHook("src.core.game3.mystery_gift", "deliverGift", function(original, session, ...)
+      local seen = snapshotGen3Mons({ gen3 = session })
+      local result = original(session, ...)
+      -- DELIVER_GIVEN is 1. Items/tickets create no new Pokemon to visit.
+      if result == 1 and type(session) == "table" and eventEnabled(session.version) then
+        forceNewEventMons(session, seen)
+      end
+      return result
+    end)
+    bindEventHook("src.core.game3.rs.mystery_event", "run", function(original, bytes, session, ...)
+      local seen = snapshotGen3Mons({ gen3 = session })
+      local result = original(bytes, session, ...)
+      if type(result) == "table" and result.valid and result.save
+          and type(session) == "table" and eventEnabled(session.version) then
+        forceNewEventMons(session, seen)
+      end
+      return result
+    end)
+    bindEventHook("src.box.Gifts", "create", function(original, version, ...)
+      local mon, seedOrError = original(version, ...)
+      if type(mon) == "table" and eventEnabled(version, true) then
+        -- Preserve Box's local RNG and native event metadata. No game stat
+        -- refresh is needed for an offline egg from another game's catalog.
+        applyEventShiny(mon, nil)
+      end
+      return mon, seedOrError
+    end)
+    bindEventHook("src.core.game3.breeding", "hatchMon", function(original, session, mon, ...)
+      local receivedShinyEgg = type(mon) == "table" and mon[EVENT_EGG_MARKER]
+        and (mon.isEgg or mon.egg)
+      local result = original(session, mon, ...)
+      if receivedShinyEgg and type(result) == "table" and not result.isEgg and not result.egg then
+        -- A received shiny stays shiny even if the option is later turned off.
+        applyGen3Shiny(result, activeGen3Game or mod.game)
+        result[EVENT_EGG_MARKER] = nil
+      end
+      return result
+    end)
+    gen3EventHooksInstalled = true
+  end
+
+  local function isEventScript(ctx)
+    local vm = ctx and (ctx.vm or ctx.runner)
+    local raw = type(vm) == "table" and vm.ctx
+    if type(raw) ~= "table" then return false end
+    local function eventKey(key)
+      return type(key) == "string" and (key:sub(1, 6) == "rsram:"
+        or key:sub(1, 8) == "rsevent:")
+    end
+    if raw.rsRamSession or eventKey(vm._scriptKey) or eventKey(raw.pc and raw.pc.listKey) then
+      return true
+    end
+    for _, frame in ipairs(raw.stack or {}) do
+      if eventKey(frame.listKey) then return true end
+    end
+    return false
+  end
   -- The Gen 3 Day Care uses a native special rather than the script giveegg
-  -- command. Both FRLG and Emerald call this shared egg-collection function.
+  -- command. FRLG and Ruby/Sapphire/Emerald share this collection function.
   local gen3DaycareHookInstalled = false
   local function installGen3DaycareHook()
     if gen3DaycareHookInstalled then return true end
@@ -489,7 +778,8 @@ return function(mod)
       local egg = original(session, ...)
       local version = type(session) == "table" and session.version or nil
       if type(egg) == "table" and egg.isEgg
-          and (version == "firered" or version == "leafgreen" or version == "emerald")
+          and (version == "firered" or version == "leafgreen" or version == "emerald"
+            or version == "ruby" or version == "sapphire")
           and opt("shiny_daycare_eggs", true) then
         applyGen3Shiny(egg, activeGen3Game)
       end
@@ -501,7 +791,8 @@ return function(mod)
   local function installGen3TradeHook(game, session)
     activeGen3Game = game or activeGen3Game
     local version = type(session) == "table" and session.version or nil
-    if version ~= "emerald" and version ~= "firered" and version ~= "leafgreen" then
+    if version ~= "emerald" and version ~= "firered" and version ~= "leafgreen"
+        and version ~= "ruby" and version ~= "sapphire" then
       return false
     end
 
@@ -558,6 +849,7 @@ return function(mod)
     if generation == 3 then
       local liveGame = (ctx and ctx.game) or mod.game
       activeGen3Game = liveGame or activeGen3Game
+      installGen3EventHooks()
       local save = ctx and ctx.save
       local raw = type(save) == "table" and save.gen3 or nil
       if type(raw) == "table" and raw.version == "emerald" then
@@ -565,6 +857,16 @@ return function(mod)
       end
       installGen3DaycareHook()
       installGen3TradeHook(activeGen3Game, raw)
+
+      -- The native opens the screen synchronously, but gives the starter
+      -- later. Wrap its live callback after the original special has run.
+      if type(raw) == "table" and (raw.version == "ruby" or raw.version == "sapphire")
+          and name == "special" and type(args) == "table"
+          and tonumber(args.id or args[1]) == 156 then
+        local result = next(ctx, name, args, ...)
+        wrapRubySapphireStarterChoice(activeGen3Game, raw)
+        return result
+      end
     elseif generation == 2 then
       installGen2DaycareHook()
     end
@@ -628,13 +930,24 @@ return function(mod)
     local mapId = giftMapId(ctx)
 
     if generation == 3 then
+      local vm = ctx and (ctx.vm or ctx.runner)
+      if type(vm) == "table" and type(vm.ctx) == "table" and vm.ctx.rsRamSession then
+        -- Immediate RS event scripts can operate on a detached session. Their
+        -- enclosing event.run wrapper handles gifts after successful validation.
+        return next(ctx, name, args, ...)
+      end
+      local eventScript = isEventScript(ctx)
       local seen = snapshotGen3Mons(save)
       local result = next(ctx, name, args, ...)
       local saveAfter = (ctx and ctx.save) or save
       local mon = findNewGen3Gift(saveAfter, seen)
 
-      if mon and shouldForce(mon, generation, mapId, name) then
-        applyGen3Shiny(mon, game)
+      if mon then
+        if eventScript then
+          if opt("shiny_mystery_event_gifts", true) then applyEventShiny(mon, game) end
+        elseif shouldForce(mon, generation, mapId, name) then
+          applyGen3Shiny(mon, game)
+        end
       end
 
       return result
@@ -658,4 +971,12 @@ return function(mod)
 
     return result
   end)
+
+  -- Mystery delivery and the Box launcher can run before any script command.
+  -- Gen 1/2 boots still avoid loading the Gen 3 engine modules.
+  if mod.game and (tonumber(mod.game.generation) == 3
+      or (mod.game.data and mod.game.data.gen3Pokemon)) then
+    activeGen3Game = mod.game
+    installGen3EventHooks()
+  end
 end
